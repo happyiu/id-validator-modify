@@ -1,0 +1,31 @@
+{
+  "name": "id-validator-modify",
+  "version": "1.0.0",
+  "description": "中国个人身份证号验证 Chinese Personal ID Card Validation 更新最新行政区划 增加部分功能",
+  "main": "./src/IDValidator.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "author": "mc-zone && eryore",
+  "mail": "mc@mc-zone.me",
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-cli": "^1.1.0",
+    "grunt-contrib-jasmine": "^1.0.0",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-uglify": "^0.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/happyiu/id-validator-modify"
+  },
+  "keywords": [
+    "身份证",
+    "ID Card",
+    "GB2260"
+  ],
+  "bugs": {
+    "url": "https://github.com/happyiu/id-validator-modify/issues"
+  }
+}
