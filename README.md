@@ -1,6 +1,8 @@
 # IDValidator.js [![Build Status](https://travis-ci.org/mc-zone/IDValidator.svg?branch=master)](https://travis-ci.org/mc-zone/IDValidator/) [![npm version](https://badge.fury.io/js/id-validator.svg)](http://badge.fury.io/js/id-validator)
 
-中国大陆个人身份证号码验证器（JS版）
+中国大陆个人身份证号码验证器（JS版）- 修改版
+
+修改内容：替换原有的行政区划代码，替换为最新且包含各种历史行政区划代码
 
 Chinese Mainland Personal ID Card Validation
 
