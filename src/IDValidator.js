@@ -48,7 +48,7 @@
                  case 'number':
                      //long number not allowed
                      id = id.toString();    
-                     if( id.length > 15 ){
+                     if( id.length > 18 ){
                          this.error(param.error.longNumber);
                          return false;
                      }
