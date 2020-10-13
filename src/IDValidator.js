@@ -40,6 +40,7 @@
      };
 
      var util = {
+        //长度检查
         checkArg:function(id, forceType){              
              var argType = (typeof id);
 
@@ -81,16 +82,28 @@
                      body : id,
                      type : 15
                  };
+             }else if(id.length === 10 ) {
+                // 10位 台湾
+                code = {
+                    body: id,
+                    type: 10
+                }
              }else{
                  return false;
              }
-
+             
              return code;
         }
         //地址码检查
         ,checkAddr:function(addr,GB2260){
-            var addrInfo = this.getAddrInfo(addr,GB2260);
+            let addrInfo;
+            if(addr.length === 1) {
+                addrInfo = this.getTWAddrInfo(addr, GB2260);
+            } else {
+                addrInfo = this.getAddrInfo(addr,GB2260);
+            }
             return ( addrInfo === false ? false : true );
+            
         }
         //取得地址码信息
         ,getAddrInfo:function(addr,GB2260){
@@ -114,16 +127,26 @@
                   return GB2260[tmpAddr] + '未知地区';
               }
           }else{
-            //   if(GB2260[addr].includes('区')) {
-            //       return
-            //   }
               return GB2260[addr];
           }
+        }
+        //取得台湾地区地址码信息
+        ,getTWAddrInfo:function(addr,GB2260) {
+            if( GB2260 === null ){
+                return addr;
+            } 
+            if(!GB2260.hasOwnProperty(addr)) {
+                return '台湾'
+            } else {
+                return GB2260[addr]
+            }
         }
         //生日码检查
         ,checkBirth:function(birth){
             var year, month, day;
-          if( birth.length == 8 ){
+          if( birth.length == 1) {  // 台湾身份证不包含生日码，跳过检查
+              return true
+          }else if( birth.length == 8 ){
               year  = parseInt( birth.slice(0,4),10 );
               month = parseInt( birth.slice(4,6),10 );
               day   = parseInt( birth.slice(-2),10 );
@@ -214,10 +237,20 @@
                  }
              }
 
-             var addr = code.body.slice(0,6);
-             var birth = ( code.type === 18 ? code.body.slice(6,14) : code.body.slice(6,12) );
-             var order = code.body.slice(-3);
+             var addr = code.type === 10 ? code.body.slice(0,1) : code.body.slice(0,6);
 
+             let birth;
+             let order;
+             if(code.type === 10) {
+                birth = '0'
+                order = code.body.slice(1, 2)
+             } else if(code.type === 18) {
+                birth = code.body.slice(6,14);
+                order = code.body.slice(-3);
+             } else {
+                birth = code.body.slice(6,12);
+                order = code.body.slice(-3);
+             }
              if( !( util.checkAddr(addr,GB2260) && util.checkBirth(birth) && util.checkOrder(order) ) ) {
                  this.cache[id].valid = false;
                  return false;
@@ -227,6 +260,31 @@
              if( code.type === 15 ){
                  this.cache[id].valid = true;
                  return true;
+             }
+             //10位台湾地区校验码暂时跳过
+             if(code.type === 10) {
+                // TW 校验
+                let TWposWeight = code.body.split('');
+                let TWCheckCode = ((TWposWeight[0].charCodeAt() - 65 + 10) + '').split('');;
+                TWposWeight.splice(0, 1, ...TWCheckCode)
+                let TWcheckBit = 0;
+                for(let i=0; i<TWposWeight.length - 1; i++) {
+                    if(i === 0) {
+                        TWcheckBit += parseInt(TWposWeight[i])
+                    } else {
+                        TWcheckBit += parseInt(TWposWeight[i]) * (10 - i)
+                    }
+                }
+                
+                let TWcheckBitCode = (TWcheckBit + '').split('')
+                let lastTWCheck = 10 - TWposWeight[TWposWeight.length]
+                if(lastTWCheck == TWcheckBitCode[TWcheckBitCode.length]) {
+                    this.cache[id].valid = false;
+                    return false;
+                } else {
+                    this.cache[id].valid = true;
+                    return true;
+                }
              }
 
              /* 校验位部分 */
@@ -253,7 +311,8 @@
                  checkBit = checkBit%11;
              }
              checkBit = ( typeof checkBit === 'number'?checkBit.toString():checkBit );
-
+            
+             
              //检查校验码
              if( checkBit !== code.checkBit ){
                  this.cache[id].valid = false;
@@ -280,10 +339,18 @@
                  return this.cache[id].info;
              }
 
-             var addr = code.body.slice(0,6);
-             var preAddr = code.body.slice(0,2) + '0000';
-             var birth = ( code.type === 18 ? code.body.slice(6,14) : code.body.slice(6,12) );
-             var order = code.body.slice(-3);
+             let addr, birth, order, preAddr;
+             if(code.type === 10) {
+                addr = preAddr = code.body.slice(0, 1);
+                birth = '0';
+                order = code.body.slice(1, 2);
+             } else {
+                addr = code.body.slice(0,6);
+                preAddr = code.body.slice(0,2) + '0000';
+                birth = ( code.type === 18 ? code.body.slice(6,14) : code.body.slice(6,12) );
+                order = code.body.slice(-3);
+   
+             }
 
              var info = {};
              info.addrCode = addr;
@@ -298,10 +365,13 @@
                      }
                  }
              }
-             info.birth = ( code.type === 18 ? (
-                            ([birth.slice(0,4),birth.slice(4,6),birth.slice(-2)]).join('-') ) :
-                            (['19'+birth.slice(0,2),birth.slice(2,4),birth.slice(-2)]).join('-') 
-                          );
+             if(code.type === 10) {
+                info.birth = new Date().getFullYear() + '-' + (new Date().getMonth() + 1) + '-' + new Date().getDate()
+             } else if(code.type === 18) {
+                info.birth = ([birth.slice(0,4),birth.slice(4,6),birth.slice(-2)]).join('-')
+             } else {
+                info.birth = (['19'+birth.slice(0,2),birth.slice(2,4),birth.slice(-2)]).join('-')
+             }
              info.age = parseInt(new Date().getFullYear()) - parseInt(new Date(info.birth).getFullYear());
              info.sex = (order%2===0?0:1);
              info.length = code.type;
@@ -384,7 +454,3 @@
     return _IDValidator;
 
 });
-
-
-
-
